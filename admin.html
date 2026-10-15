@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root { --azul-escoteiro: #0033A0; --verde-escoteiro: #00853F; --amarelo: #FFDF00; }
+    body { font-family: 'Poppins', sans-serif; padding: 24px; background-color: #f0f4f8; }
+    h3 { color: var(--azul-escoteiro); font-weight: 700; }
+
+    /* Tela de Login */
+    .login-wrapper { min-height: 80vh; display: flex; align-items: center; justify-content: center; }
+    .login-box {
+      background: white; border-radius: 16px; padding: 40px 36px; max-width: 380px; width: 100%;
+      box-shadow: 0 10px 34px rgba(0,0,0,0.12); text-align: center;
+    }
+    .login-box h4 { color: var(--azul-escoteiro); font-weight: 700; margin-bottom: 6px; }
+    .login-box p.subtitle { color: #888; font-size: 13px; margin-bottom: 24px; }
+    .login-box input { border-radius: 8px; margin-bottom: 14px; padding: 12px; }
+    .login-box .btn-entrar { background-color: var(--verde-escoteiro); color: white; border: none; width: 100%; padding: 12px; border-radius: 8px; font-weight: 700; }
+    .login-box .btn-entrar:hover { background-color: #006b32; color: white; }
+    .login-erro { color: #d32f2f; font-size: 13px; margin-top: 10px; min-height: 18px; }
+
+    .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 24px; }
+    .card-stat { background: white; border-radius: 12px; padding: 18px 20px; box-shadow: 0 4px 14px rgba(0,0,0,0.08); border-left: 5px solid var(--azul-escoteiro); }
+    .card-stat.verde { border-left-color: var(--verde-escoteiro); }
+    .card-stat.amarelo { border-left-color: #c99a00; }
+    .card-stat.vermelho { border-left-color: #d32f2f; }
+    .card-stat .label { font-size: 12px; text-transform: uppercase; color: #888; font-weight: 600; letter-spacing: 0.5px; }
+    .card-stat .value { font-size: 26px; font-weight: 700; color: #222; margin-top: 4px; }
+
+    .table-container { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 14px rgba(0,0,0,0.08); }
+    .toolbar { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; justify-content: space-between; }
+    .toolbar-filtros { display: flex; gap: 10px; flex-wrap: wrap; }
+    .toolbar input, .toolbar select { border-radius: 8px; }
+
+    table { font-size: 14px; }
+    .badge-pendente { background-color: #fff3cd; color: #856404; }
+    .badge-confirmado { background-color: #d4edda; color: #155724; }
+    .badge-cancelado { background-color: #f8d7da; color: #721c24; }
+
+    .btn-confirmar { background-color: var(--verde-escoteiro); color: white; border: none; }
+    .btn-confirmar:hover { background-color: #006b32; color: white; }
+    .btn-cancelar { background-color: #d32f2f; color: white; border: none; }
+    .btn-cancelar:hover { background-color: #a92424; color: white; }
+    .btn-sair { background: none; border: 1px solid #ccc; color: #555; }
+    .btn-sair:hover { background: #f1f1f1; }
+
+    .footer-contato {
+      margin-top: 24px; text-align: center; font-size: 13px; color: #777;
+      background: white; border-radius: 12px; padding: 16px; box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+    }
+    .footer-contato strong { color: var(--azul-escoteiro); }
+
+    .toast {
+      position: fixed; top: 20px; right: 20px; background: #222; color: white; padding: 14px 20px;
+      border-radius: 10px; font-size: 14px; z-index: 9999; opacity: 0; transform: translateY(-10px);
+      transition: 0.3s; pointer-events: none; box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+    }
+    .toast.show { opacity: 1; transform: translateY(0); }
+    .toast.erro { background: #c62828; }
+    .toast.sucesso { background: var(--verde-escoteiro); }
+  </style>
+</head>
+<body>
+
+  <!-- ===== TELA DE LOGIN ===== -->
+  <div class="login-wrapper" id="loginWrapper">
+    <div class="login-box">
+      <h4>🔒 Painel Administrativo</h4>
+      <p class="subtitle">Distintivo Desfile Cívico 07 de Setembro</p>
+      <input type="text" id="loginUser" class="form-control" placeholder="Usuário" autocomplete="username">
+      <input type="password" id="loginPass" class="form-control" placeholder="Senha" autocomplete="current-password">
+      <button class="btn-entrar" id="btnEntrar" onclick="fazerLogin()">Entrar</button>
+      <div class="login-erro" id="loginErro"></div>
+    </div>
+  </div>
+
+  <!-- ===== CONTEÚDO DO PAINEL (só aparece após o login) ===== -->
+  <div id="painelAdmin" style="display:none;">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h3 class="mb-0">📋 Painel Administrativo — Distintivo 07 de Setembro</h3>
+      <button class="btn btn-sm btn-sair" onclick="sair()">Sair</button>
+    </div>
+
+    <div class="cards" id="cardsResumo">
+      <div class="card-stat">
+        <div class="label">Total de Pedidos</div>
+        <div class="value" id="statPedidos">-</div>
+      </div>
+      <div class="card-stat verde">
+        <div class="label">Distintivos Vendidos</div>
+        <div class="value" id="statQtd">-</div>
+      </div>
+      <div class="card-stat verde">
+        <div class="label">Valor Arrecadado</div>
+        <div class="value" id="statValor">-</div>
+      </div>
+      <div class="card-stat amarelo">
+        <div class="label">Pix Pendentes</div>
+        <div class="value" id="statPendentes">-</div>
+      </div>
+    </div>
+
+    <div class="table-container">
+      <div class="toolbar">
+        <div class="toolbar-filtros">
+          <input type="text" id="busca" class="form-control" style="max-width:260px" placeholder="Buscar por nome ou grupo...">
+          <select id="filtroStatus" class="form-select" style="max-width:200px">
+            <option value="">Todos os status</option>
+            <option value="Pendente">Pendente</option>
+            <option value="Confirmado">Confirmado</option>
+            <option value="Cancelado">Cancelado</option>
+          </select>
+        </div>
+        <button class="btn btn-outline-secondary" onclick="carregarDados()">🔄 Atualizar</button>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table table-striped table-hover align-middle">
+          <thead class="table-dark">
+            <tr>
+              <th>Data</th>
+              <th>Nome</th>
+              <th>Telefone</th>
+              <th>Distrito</th>
+              <th>Grupo</th>
+              <th>Entrega</th>
+              <th>Cidade</th>
+              <th>Qtd</th>
+              <th>Valor (R$)</th>
+              <th>Comprovante</th>
+              <th>Status</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody">
+            <tr><td colspan="12" class="text-center">Carregando pedidos...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="footer-contato" id="footerContato">
+      Carregando informações de contato...
+    </div>
+
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    let todosPedidos = [];
+
+    window.onload = function() {
+      if (sessionStorage.getItem('adminLoggedIn') === 'true') {
+        mostrarPainel();
+      } else {
+        document.getElementById('loginUser').focus();
+      }
+      document.getElementById('loginPass').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') fazerLogin();
+      });
+    };
+
+    function fazerLogin() {
+      const user = document.getElementById('loginUser').value.trim();
+      const pass = document.getElementById('loginPass').value;
+      const btn = document.getElementById('btnEntrar');
+      const erro = document.getElementById('loginErro');
+
+      erro.innerText = '';
+      btn.disabled = true;
+      btn.innerText = 'Verificando...';
+
+      google.script.run
+        .withSuccessHandler(function(ok) {
+          btn.disabled = false;
+          btn.innerText = 'Entrar';
+          if (ok) {
+            sessionStorage.setItem('adminLoggedIn', 'true');
+            mostrarPainel();
+          } else {
+            erro.innerText = 'Usuário ou senha incorretos.';
+          }
+        })
+        .withFailureHandler(function(err) {
+          btn.disabled = false;
+          btn.innerText = 'Entrar';
+          erro.innerText = 'Erro ao verificar login: ' + err.message;
+        })
+        .checkAdminLogin(user, pass);
+    }
+
+    function sair() {
+      sessionStorage.removeItem('adminLoggedIn');
+      document.getElementById('painelAdmin').style.display = 'none';
+      document.getElementById('loginWrapper').style.display = 'flex';
+      document.getElementById('loginUser').value = '';
+      document.getElementById('loginPass').value = '';
+    }
+
+    function mostrarPainel() {
+      document.getElementById('loginWrapper').style.display = 'none';
+      document.getElementById('painelAdmin').style.display = 'block';
+      carregarDados();
+      carregarContato();
+    }
+
+    function mostrarToast(mensagem, tipo) {
+      const toast = document.getElementById('toast');
+      toast.innerText = mensagem;
+      toast.className = 'toast show' + (tipo ? ' ' + tipo : '');
+      setTimeout(function() {
+        toast.className = 'toast';
+      }, 3500);
+    }
+
+    function carregarContato() {
+      google.script.run
+        .withSuccessHandler(function(info) {
+          document.getElementById('footerContato').innerHTML =
+            '<strong>' + info.distrito + '</strong><br>' +
+            'Contato: ' + info.nome + ' &bull; ' + info.telefone;
+        })
+        .withFailureHandler(function() {
+          document.getElementById('footerContato').innerText = 'Não foi possível carregar as informações de contato.';
+        })
+        .getContatoInfo();
+    }
+
+    function carregarDados() {
+      document.getElementById('tableBody').innerHTML = '<tr><td colspan="12" class="text-center">Carregando pedidos...</td></tr>';
+      google.script.run
+        .withSuccessHandler(function(data) {
+          todosPedidos = data;
+          renderResumo(data);
+          renderTable(data);
+        })
+        .withFailureHandler(function(err) {
+          document.getElementById('tableBody').innerHTML =
+            '<tr><td colspan="12" class="text-center text-danger">Erro ao carregar: ' + err.message + '</td></tr>';
+        })
+        .getAdminData();
+    }
+
+    function renderResumo(data) {
+      const totalPedidos = data.length;
+      const totalQtd = data.reduce(function(s, i) { return s + (parseInt(i.quantidade) || 0); }, 0);
+      const totalValor = data.reduce(function(s, i) { return s + (parseFloat(i.valor) || 0); }, 0);
+      const pendentes = data.filter(function(i) { return i.status === 'Pendente'; }).length;
+
+      document.getElementById('statPedidos').innerText = totalPedidos;
+      document.getElementById('statQtd').innerText = totalQtd;
+      document.getElementById('statValor').innerText = 'R$ ' + totalValor.toFixed(2).replace('.', ',');
+      document.getElementById('statPendentes').innerText = pendentes;
+    }
+
+    function statusBadgeClass(status) {
+      if (status === 'Confirmado') return 'badge-confirmado';
+      if (status === 'Cancelado') return 'badge-cancelado';
+      return 'badge-pendente';
+    }
+
+    function renderTable(data) {
+      const busca = (document.getElementById('busca').value || '').toLowerCase();
+      const filtroStatus = document.getElementById('filtroStatus').value;
+
+      const filtrado = data.filter(function(item) {
+        const bateBusca = !busca || (item.nome || '').toLowerCase().indexOf(busca) !== -1 || (item.grupo || '').toLowerCase().indexOf(busca) !== -1;
+        const bateStatus = !filtroStatus || item.status === filtroStatus;
+        return bateBusca && bateStatus;
+      });
+
+      const tbody = document.getElementById('tableBody');
+      tbody.innerHTML = '';
+
+      if (filtrado.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="12" class="text-center">Nenhum pedido encontrado.</td></tr>';
+        return;
+      }
+
+      filtrado.forEach(function(item) {
+        const tr = document.createElement('tr');
+
+        let acoes = '';
+        if (item.status !== 'Confirmado') {
+          acoes += '<button class="btn btn-sm btn-confirmar mb-1" onclick="atualizarStatus(' + item.rowIndex + ", 'Confirmado')" + '">✔ Confirmar</button> ';
+        }
+        if (item.status !== 'Cancelado') {
+          acoes += '<button class="btn btn-sm btn-cancelar" onclick="atualizarStatus(' + item.rowIndex + ", 'Cancelado')" + '">✖ Cancelar</button>';
+        }
+
+        tr.innerHTML =
+          '<td>' + item.data + '</td>' +
+          '<td>' + item.nome + '<br><small class="text-muted">' + item.email + '</small></td>' +
+          '<td>' + item.telefone + '</td>' +
+          '<td>' + item.distrito + '</td>' +
+          '<td>' + item.grupo + '</td>' +
+          '<td>' + (item.entrega === 'correios' ? 'Correios' : 'Retirada') + '</td>' +
+          '<td>' + item.cidade + '</td>' +
+          '<td>' + item.quantidade + '</td>' +
+          '<td>R$ ' + parseFloat(item.valor).toFixed(2) + '</td>' +
+          '<td><a href="' + item.comprovante + '" target="_blank" class="btn btn-sm btn-info text-white">Ver Pix</a></td>' +
+          '<td><span class="badge ' + statusBadgeClass(item.status) + '">' + item.status + '</span></td>' +
+          '<td>' + acoes + '</td>';
+
+        tbody.appendChild(tr);
+      });
+    }
+
+    function atualizarStatus(rowIndex, novoStatus) {
+      google.script.run
+        .withSuccessHandler(function(resp) {
+          if (resp.indexOf('Erro') !== -1) {
+            mostrarToast(resp, 'erro');
+          } else {
+            mostrarToast('Status atualizado para "' + novoStatus + '"', 'sucesso');
+            carregarDados();
+          }
+        })
+        .withFailureHandler(function(err) {
+          mostrarToast('Erro ao atualizar: ' + err.message, 'erro');
+        })
+        .updateStatus(rowIndex, novoStatus);
+    }
+
+    document.getElementById('busca').addEventListener('input', function() { renderTable(todosPedidos); });
+    document.getElementById('filtroStatus').addEventListener('change', function() { renderTable(todosPedidos); });
+  </script>
+</body>
+</html>
